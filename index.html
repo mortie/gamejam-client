@@ -1,10 +1,59 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
 		<title>GameJam Game</title>
+
+		<style>
+			body {
+				margin: 0px;
+				padding: 0px;
+				background-color: #000;
+				color: #ccc;
+				overflow: hidden;
+			}
+			.view {
+				display: none;
+			}
+			.view.current {
+				display: block;
+				width: 100%;
+				height: 100%;
+			}
+
+			.view.pre.current {
+				max-width: 900px;
+				margin: auto;
+			}
+
+			x-script {
+				display: none;
+			}
+		</style>
 	</head>
 	<body>
+		<div class="view pre">
+			<p>Umbreosyl. Once a peaceful paradise, your home planet is now shredded by the mighty blow of The Deathers and their powerful Death Moon.</p>
+
+			<p>Umbreosylians are a fickle race. At the first sign of danger, of course, everyone you knew flew away to migrate to a safe place. Except you. You overslept, missed the ships, and are now abandoned.</p>
+
+			<p>You barely managed to enter your ship, lift off, and get to a somewhat safe distance from the planet, before The Deathers destroyed Umbreosyl. You're currently sitting in your space ship, blood boiling, watching the debris from your beloved home planet encounter you from behind, and ships from The Deathers from ahead.</p>
+
+			<button id="startGameBtn">Start</button>
+		</div>
+
+		<div class="view game">
+			<canvas id="canvas">Your browser is bad and you should feel bad.</canvas>
+		</div>
+
+		<script src="js/view.js"></script>
 		<script src="node_modules/socksugar/client.js"></script>
 		<script src="bundle.js"></script>
+
+		<script>
+			view("pre");
+
+		</script>
 	</body>
 </html>

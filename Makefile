@@ -1,2 +1,2 @@
 build:
-	browserify -t babelify --outfile bundle.js js/*.js
+	browserify -t babelify --outfile bundle.js es/*.js
