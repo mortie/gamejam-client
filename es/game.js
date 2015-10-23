@@ -152,7 +152,6 @@ export default class Game {
 		});
 
 		sock.on("set", (msg) => {
-			console.log(msg);
 			if (!this.entities[msg.id])
 				this.entities[msg.id] = createEntity(msg);
 			else
@@ -212,5 +211,9 @@ export default class Game {
 		this.ctx.translate(this.camera.x, this.camera.y);
 
 		this.raf = window.requestAnimationFrame(this.update.bind(this));
+	}
+
+	stop() {
+		window.cancelAnimationFrame(this.raf);
 	}
 }
