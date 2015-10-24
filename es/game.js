@@ -53,39 +53,83 @@ function background(ctx, camera, offset) {
 window.addEventListener("resize", () => background.cache = null);
 
 class Animation {
-	constructor({img, x, y, width, height, nsteps, loop = false, fps = 10}) {
+	constructor({img, x, y, width, height, dwidth, dheight, wsteps, hsteps, nsteps, loop, fps, rot, offsetX, offsetY}) {
+		loop = loop || false;
+		fps = fps || 30;
+		nsteps = nsteps || wsteps * hsteps;
+		dwidth = dwidth || width;
+		dheight = dheight || height;
+		rot = rot || 0;
+		offsetX = offsetX || 0;
+		offsetY = offsetY || 0;
+
 		this.img = img;
 		this.x = x;
 		this.y = y;
+		this.offsetX = offsetX;
+		this.offsetY = offsetY;
+		this.rot = rot;
 		this.width = width;
 		this.height = height;
-		this.nsteps = nsteps;
+		this.dwidth = dwidth;
+		this.dheight = dheight;
+		this.wsteps = wsteps;
+		this.hsteps = hsteps;
+		this.wstep = 0;
+		this.hstep = 0;
 		this.step = 0;
+		this.nsteps = nsteps;
+		this.loop = loop;
+		this.visible = true;
 		this.onend = function(){};
 
 		let interval = setInterval(() => {
 			this.step += 1;
-			if (this.step > this.nsteps) {
+			if (this.step >= this.nsteps) {
 				this.step = 0;
+				this.wstep = 0;
+				this.hstep = 0;
 
-				if (!loop)
+				if (!this.loop) {
+					clearInterval(interval);
 					this.onend();
+				}
+
+				return;
 			}
+
+			this.wstep += 1;
+			if (this.wstep >= this.wsteps) {
+				this.wstep = 0;
+				this.hstep += 1;
+			}
+
 		}, 1000/fps);
 	}
 
 	animate(ctx) {
+		if (!this.visible)
+			return;
+
+		ctx.translate(this.x, this.y);
+
+		if (this.rot)
+			ctx.rotate(this.rot);
+
 		ctx.drawImage(
 			this.img,
-			this.step * this.width,
-			0,
+			this.wstep * this.width,
+			this.hstep * this.width,
 			this.width,
 			this.height,
-			this.x,
-			this.y,
-			this.width,
-			this.height
+			this.offsetX,
+			this.offsetY,
+			this.dwidth,
+			this.dheight
 		);
+
+		if (this.rot)
+			ctx.rotate(-this.rot);
 	}
 }
 
@@ -117,10 +161,10 @@ class Entity {
 
 let BulletImgs = {
 	despawn: createImage("imgs/bullet_despawn.png")
-}
+};
 
 class Bullet extends Entity {
-	constructor(x: 0, y: 0, vel, id, ownerId, game) {
+	constructor(x, y, vel, id, ownerId, game) {
 		super(x, y, 5, 5, id, game);
 		this.imgs = BulletImgs;
 		this.vel.set(vel.x, vel.y);
@@ -151,15 +195,21 @@ class Bullet extends Entity {
 		this.game.animate(new Animation({
 			img: this.imgs.despawn,
 			x: this.pos.x,
-			y: this.pos.y
+			y: this.pos.y,
+			width: 64,
+			height: 64,
+			dwidth: 16,
+			dheight: 16,
+			wsteps: 5,
+			hsteps: 5
 		}));
 	}
 }
 
 let PlayerImgs = {
 	thrust_back: createImage("imgs/player_thrust_back.png"),
-	explosion: createImage("imgs/player_explosion.png")
-}
+	despawn: createImage("imgs/player_despawn.png")
+};
 
 class Player extends Entity {
 	constructor(x, y, id, rot, game) {
@@ -169,10 +219,26 @@ class Player extends Entity {
 		this.rotVel = 0;
 		this.keys = {};
 		this.health = 0;
+
+		this.thrustAnim = new Animation({
+			img: this.imgs.thrust_back,
+			x: this.pos.x,
+			y: this.pos.y,
+			width: 128,
+			height: 128,
+			dwidth: 64,
+			dheight: 64,
+			wsteps: 4,
+			hsteps: 4,
+			fps: 60,
+			loop: true
+		});
+		this.thrustAnim.visible = false;
+		game.animate(this.thrustAnim);
 	}
 
 	draw(ctx, selfId) {
-		let h = 255-((100-this.health) * 2)
+		let h = 255-((100-this.health) * 2);
 
 		if (selfId == this.id) {
 			ctx.fillStyle = "rgb("+h+", "+h+", "+h+")";
@@ -183,13 +249,11 @@ class Player extends Entity {
 		ctx.rotate(this.rot);
 
 		if (this.keys.up) {
-			ctx.drawImage(
-				this.imgs.thrust_back,
-				-this.width,
-				this.height/2,
-				this.width*2,
-				this.height*2
-			);
+			this.thrustAnim.rot = this.rot;
+			this.thrustAnim.x = this.pos.x;
+			this.thrustAnim.y = this.pos.y;
+			this.thrustAnim.offsetX = -this.thrustAnim.dwidth/2;
+			this.thrustAnim.offsetY = this.thrustAnim.dwidth/2;
 		}
 
 		ctx.beginPath();
@@ -219,8 +283,6 @@ class Player extends Entity {
 
 				let pos = e.pos.clone().sub(this.pos).normalize().scale(100);
 
-				console.log(pos);
-
 				ctx.fillStyle = "rgb(255, 0, 0)";
 				ctx.beginPath();
 				ctx.arc(pos.x, pos.y, 10, 0, 2*Math.PI);
@@ -247,6 +309,27 @@ class Player extends Entity {
 	update(dt) {
 		super.update(dt);
 		this.rot += this.rotVel * dt;
+
+		if (this.keys.up)
+			this.thrustAnim.visible = true;
+		else
+			this.thrustAnim.visible = false;
+	}
+
+	despawn() {
+		this.game.animate(new Animation({
+			img: this.imgs.despawn,
+			x: this.pos.x,
+			y: this.pos.y,
+			width: 64,
+			height: 64,
+			dwidth: 128,
+			dheight: 128,
+			offsetX: -64,
+			offsetY: -64,
+			wsteps: 5,
+			hsteps: 5
+		}));
 	}
 }
 
@@ -308,6 +391,10 @@ export default class Game {
 		});
 
 		sock.on("despawn", (msg) => {
+			if (!this.entities[msg.id])
+				return;
+
+			this.entities[msg.id].despawn();
 			delete this.entities[msg.id];
 			if (msg.id == this.id) {
 				alert("You died.");
@@ -374,7 +461,11 @@ export default class Game {
 
 			ent.update(dt);
 		});
-		this.animations.forEach((a) => a.animate());
+		this.animations.forEach((a) => {
+			this.ctx.save();
+			a.animate(this.ctx);
+			this.ctx.restore();
+		});
 		this.ctx.translate(cam.x, cam.y);
 
 		this.raf = window.requestAnimationFrame(this.update.bind(this));
@@ -391,9 +482,9 @@ export default class Game {
 
 	animate(animation) {
 		let i = this.animations.length;
-		this.animations.add(animation);
+		this.animations.push(animation);
 		animation.onend = () => {
 			delete this.animations[i];
-		}
+		};
 	}
 }
