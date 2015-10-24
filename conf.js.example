@@ -1,0 +1,3 @@
+window.conf = {
+	address: "ws://some-url.com:port"
+}
