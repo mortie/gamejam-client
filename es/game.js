@@ -169,9 +169,6 @@ class Bullet extends Entity {
 		this.imgs = BulletImgs;
 		this.vel.set(vel.x, vel.y);
 		this.ownerId = ownerId;
-
-		if (ownerId == game.id)
-			game.screenShake(10, 0);
 	}
 
 	draw(ctx, selfId) {
@@ -254,6 +251,12 @@ class Player extends Entity {
 			this.thrustAnim.y = this.pos.y;
 			this.thrustAnim.offsetX = -this.thrustAnim.dwidth/2;
 			this.thrustAnim.offsetY = this.thrustAnim.dwidth/2;
+
+			if (this.keys.sprint) {
+				this.thrustAnim.dheight = 100;
+			} else {
+				this.thrustAnim.dheight = 64;
+			}
 		}
 
 		ctx.beginPath();
@@ -302,7 +305,7 @@ class Player extends Entity {
 		this.health = obj.health;
 
 		if (this.id == this.game.id && lastHealth > obj.health) {
-			this.game.screenShake(200);
+			this.game.screenShake(50);
 		}
 	}
 
@@ -323,13 +326,15 @@ class Player extends Entity {
 			y: this.pos.y,
 			width: 64,
 			height: 64,
-			dwidth: 128,
-			dheight: 128,
-			offsetX: -64,
-			offsetY: -64,
+			dwidth: 256,
+			dheight: 256,
+			offsetX: -128,
+			offsetY: -128,
 			wsteps: 5,
 			hsteps: 5
 		}));
+		this.thrustAnim.visible = false;
+		this.thrustAnim.loop = false;
 	}
 }
 
@@ -370,6 +375,7 @@ export default class Game {
 		this.keymap[65] = "left";
 		this.keymap[68] = "right";
 		this.keymap[32] = "shoot";
+		this.keymap[16] = "sprint";
 
 		this.entities = [];
 		this.animations = [];
@@ -397,14 +403,18 @@ export default class Game {
 			this.entities[msg.id].despawn();
 			delete this.entities[msg.id];
 			if (msg.id == this.id) {
-				alert("You died.");
-				this.stop();
+				this.screenShake(400);
+				setTimeout(() => {
+					alert("You died.");
+					this.stop();
+				}, 1200);
 			}
 		});
 
 		window.addEventListener("keydown", (evt) => {
 			if (this.keymap[evt.keyCode]) {
 				evt.preventDefault();
+				evt.stopPropagation();
 				this.sock.send("keydown", {
 					key: this.keymap[evt.keyCode]
 				});
