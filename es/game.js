@@ -6,15 +6,12 @@ function random(min, max) {
 	return Math.random() * (max - min + 1) + min;
 }
 
-function avg(...args) {
-	return args.reduce((s, n) => s + n, 0) / args.length;
-}
-
 function background(ctx, camera) {
 	if (!background.cache) {
 		let cache = [];
-		for (let i = 0; i < window.innerWidth; ++i) {
-			let parallax = random(5.6, 6);
+		let n = 1000;
+		for (let i = 0; i < n; ++i) {
+			let parallax = random(5.6, 9);
 			cache.push({
 				x: randint(0, window.innerWidth * parallax),
 				y: randint(0, window.innerHeight * parallax),
@@ -97,21 +94,41 @@ class Bullet extends Entity {
 	}
 }
 
+let PlayerImgs = {
+	thrust_back: createImage("imgs/thrust_back.png")
+}
+
 class Player extends Entity {
 	constructor(x, y, id, rot) {
 		super(x, y, 25, 60, id);
 		this.rot = rot;
 		this.rotVel = 0;
+		this.keys = {};
+		this.imgs = PlayerImgs;
+		this.health = 0;
 	}
 
 	draw(ctx, selfId) {
+		let h = 255-((100-this.health) * 2)
+
 		if (selfId == this.id) {
-			ctx.fillStyle = "#FFFFFF";
+			ctx.fillStyle = "rgba("+h+", "+h+", "+h+", 1)";
 		} else {
-			ctx.fillStyle = "#FF0000";
+			ctx.fillStyle = "rgba("+h+", 0, 0, 1)";
 		}
 
 		ctx.rotate(this.rot);
+
+		if (this.keys.up) {
+			ctx.drawImage(
+				this.imgs.thrust_back,
+				-this.width,
+				this.height/2,
+				this.width*2,
+				this.height*2
+			);
+		}
+
 		ctx.beginPath();
 		ctx.moveTo(0, -(this.height/2));
 		ctx.lineTo(-this.width, this.height/2);
@@ -124,6 +141,8 @@ class Player extends Entity {
 		super.set(obj);
 		this.rot = obj.rot;
 		this.rotVel = obj.rotVel;
+		this.keys = obj.keys;
+		this.health = obj.health;
 	}
 
 	update(dt) {
@@ -142,6 +161,12 @@ function createEntity(obj) {
 	}
 }
 
+function createImage(url) {
+	var img = document.createElement("img");
+	img.src = url;
+	return img;
+}
+
 export default class Game {
 	constructor(sock, canvas) {
 		this.sock = sock;
@@ -154,10 +179,10 @@ export default class Game {
 		this.player = null;
 
 		this.keymap = [];
-		this.keymap[40] = "down";
-		this.keymap[38] = "up";
-		this.keymap[37] = "left";
-		this.keymap[39] = "right";
+		this.keymap[87] = "up";
+		this.keymap[83] = "down";
+		this.keymap[65] = "left";
+		this.keymap[68] = "right";
 		this.keymap[32] = "shoot";
 
 		this.entities = [];
@@ -177,6 +202,8 @@ export default class Game {
 
 		sock.on("despawn", (msg) => {
 			delete this.entities[msg.id];
+			if (msg.id == this.id)
+				alert("You died.");
 		});
 
 		window.addEventListener("keydown", (evt) => {
