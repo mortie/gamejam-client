@@ -1,4 +1,4 @@
-let Game = require("./game.js");
+let Game = require("./game");
 
 document.querySelector("#startGameBtn").addEventListener("click", () => {
 	view("game");
