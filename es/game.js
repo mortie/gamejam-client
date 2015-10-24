@@ -2,13 +2,23 @@ function randint(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function random(min, max) {
+	return Math.random() * (max - min + 1) + min;
+}
+
+function avg(...args) {
+	return args.reduce((s, n) => s + n, 0) / args.length;
+}
+
 function background(ctx, camera) {
 	if (!background.cache) {
 		let cache = [];
 		for (let i = 0; i < window.innerWidth; ++i) {
+			let parallax = random(5.6, 6);
 			cache.push({
-				x: randint(0, window.innerWidth * 5),
-				y: randint(0, window.innerHeight * 5)
+				x: randint(0, window.innerWidth * parallax),
+				y: randint(0, window.innerHeight * parallax),
+				p: parallax
 			});
 		}
 		background.cache = cache;
@@ -22,15 +32,22 @@ function background(ctx, camera) {
 	ctx.fillStyle = "#FFFFFF";
 	for (let i = 0, len = cache.length; i < len; ++i) {
 		let p = cache[i];
+		let x = ((p.x - cx) / p.p) % window.innerWidth;
+		let y = ((p.y - cy) / p.p) % window.innerHeight;
+		if (x < 0)
+			x += window.innerWidth;
+		if (y < 0)
+			y += window.innerHeight;
+
 		ctx.beginPath();
-		let x = Math.floor(((p.x - cx) / 5) % window.innerWidth);
-		let y = Math.floor(((p.y - cy) / 5) % window.innerHeight);
 		ctx.arc(x, y, 1, 0, 2*Math.PI);
 		ctx.closePath();
 		ctx.fill();
 	}
 	ctx.fillStyle = fs;
 }
+
+window.addEventListener("resize", () => background.cache = null);
 
 class Entity {
 	constructor(x, y, width, height, id) {
