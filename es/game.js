@@ -21,7 +21,7 @@ function createImage(url) {
 function background(ctx, camera, offset) {
 	if (!background.cache) {
 		let cache = [];
-		let n = 1000;
+		let n = window.innerWidth / 2;
 		for (let i = 0; i < n; ++i) {
 			let parallax = random(5.6, 9);
 			cache.push({
@@ -225,12 +225,13 @@ let PlayerSounds = {
 };
 
 class Player extends Entity {
-	constructor(x, y, id, rot, game) {
+	constructor(x, y, id, rot, name, game) {
 		super(x, y, 25, 60, id, game);
 		this.rot = rot;
 		this.rotVel = 0;
 		this.keys = {};
 		this.health = 0;
+		this.name = name;
 
 		this.thrustAnim = new Animation({
 			img: PlayerImgs.thrust_back,
@@ -248,11 +249,13 @@ class Player extends Entity {
 		this.thrustAnim.visible = false;
 		game.animate(this.thrustAnim);
 
-		this.thrustSound = document.createElement("audio");
-		this.thrustSound.src = PlayerSounds.thrust;
-		this.thrustSound.loop = true;
-		this.thrustSound.play();
-		this.thrustSound.volume = 0;
+		if (this.id === game.id) {
+			this.thrustSound = document.createElement("audio");
+			this.thrustSound.src = PlayerSounds.thrust;
+			this.thrustSound.loop = true;
+			this.thrustSound.play();
+			this.thrustSound.volume = 0;
+		}
 	}
 
 	draw(ctx, selfId) {
@@ -289,7 +292,24 @@ class Player extends Entity {
 		ctx.closePath();
 		ctx.fill();
 
+		{
+
+			let h = (this.height/2) + 10;
+			if (this.thrustAnim.visible)
+				h += this.thrustAnim.dheight;
+
+		}
+
 		ctx.rotate(-this.rot);
+
+		ctx.textAlign = "center";
+		ctx.textBaseline = "middle";
+		ctx.font = "bold 30px Arial";
+		ctx.strokeStyle = "#000000";
+		ctx.fillStyle = "#ffffff";
+		ctx.lineWidth = 2;
+		ctx.fillText(this.name, 0, 0);
+		ctx.strokeText(this.name, 0, 0);
 
 		//Draw pointers to far away players
 		if (selfId == this.id) {
@@ -327,6 +347,9 @@ class Player extends Entity {
 		this.keys = obj.keys;
 		this.health = obj.health;
 
+		if (obj.name)
+			this.name = obj.name;
+
 		if (this.id == this.game.id && lastHealth > obj.health) {
 			this.game.screenShake(50);
 		}
@@ -338,13 +361,16 @@ class Player extends Entity {
 
 		if (this.keys.up) {
 			this.thrustAnim.visible = true;
-			if (this.keys.sprint)
-				this.thrustSound.volume = 1;
-			else
-				this.thrustSound.volume = 0.5;
+
+			if (this.keys.sprint && this.thrustSound)
+				this.thrustSound.volume = 0.6;
+			else if (this.id === this.game.id)
+				this.thrustSound.volume = 0.3;
 		} else {
 			this.thrustAnim.visible = false;
-			this.thrustSound.volume = 0;
+
+			if (this.thrustSound)
+				this.thrustSound.volume = 0;
 		}
 	}
 
@@ -365,22 +391,24 @@ class Player extends Entity {
 		this.thrustAnim.visible = false;
 		this.thrustAnim.loop = false;
 		this.game.playSound(PlayerSounds.despawn, this.pos);
+		if (this.thrustSound)
+			this.thrustSound.stop();
 	}
 }
 
 function createEntity(obj, game) {
 	if (obj.type == "player") {
-		return new Player(obj.pos.x, obj.pos.y, obj.id, obj.rot, game);
+		return new Player(obj.pos.x, obj.pos.y, obj.id, obj.rot, obj.name, game);
 	} else if (obj.type == "bullet") {
 		return new Bullet(obj.pos.x, obj.pos.y, obj.vel, obj.id, obj.ownerId, game);
 	} else {
-		console.log("Unknown entity type: "+obj.type);
+		throw new Error("Unknown entity type: "+obj.type);
 		return false;
 	}
 }
 
 export default class Game {
-	constructor(sock, canvas) {
+	constructor(sock, canvas, name) {
 		this.sock = sock;
 		this.canvas = canvas;
 		this.ctx = canvas.getContext("2d");
@@ -406,24 +434,29 @@ export default class Game {
 		this.animations = [];
 
 		sock.on("ready", () => {
-			sock.send("get_id", {}, (err, res) => {
+			sock.send("get_id", {
+				name: name
+			}, (err, res) => {
 				this.id = res.id;
 			});
 		});
 
 		sock.on("set", (msg) => {
 			msg.forEach((m) => {
-				if (!this.entities[m.id]) {
-					let ent = createEntity(m, this);
-					if (ent)
-						this.entities[m.id] = ent;
-				} else {
+				if (this.entities[m.id]) {
 					this.entities[m.id].set(m);
+				} else {
+					if (!m.type)
+						return;
+
+					let ent = createEntity(m, this);
+					this.entities[m.id] = ent;
 				}
 			});
 		});
 
 		sock.on("despawn", (msg) => {
+			console.log(msg);
 			if (!this.entities[msg.id])
 				return;
 
@@ -527,8 +560,10 @@ export default class Game {
 
 	playSound(url, pos) {
 		let player = this.entities[this.id];
+		if (!player)
+			return;
+
 		let dist = player.pos.clone().sub(pos);
-		console.log(dist, dist.length());
 
 		let sound = document.createElement("audio");
 		sound.src = url;

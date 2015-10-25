@@ -2,12 +2,15 @@ let Game = require("./game");
 
 let game, sock;
 
-function startGame() {
+function startGame(name) {
+	if (typeof name !== "string")
+		name = document.getElementById("playerName").value || "Guest";
+
 	view("game");
-	location.hash = "game";
+	location.hash = name;
 
 	sock = new SockSugar(conf.address);
-	game = new Game(sock, document.getElementById("canvas"));
+	game = new Game(sock, document.getElementById("canvas"), name);
 
 	sock.on("close", () => {
 		alert("Server closed.");
@@ -19,7 +22,6 @@ function startGame() {
 
 document.querySelector("#startGameBtn").addEventListener("click", startGame);
 document.querySelector("#restartGameBtn").addEventListener("click", () => {
-	location.hash = "game";
 	location.reload();
 });
 document.querySelector("#storyBtn").addEventListener("click", () => {
@@ -28,8 +30,9 @@ document.querySelector("#storyBtn").addEventListener("click", () => {
 });
 
 window.addEventListener("load", () => {
-	if (location.hash.substring(1) === "game") {
-		startGame();
+	let name = location.hash.substring(1);
+	if (name) {
+		startGame(name);
 		console.log("starting");
 	}
 });
