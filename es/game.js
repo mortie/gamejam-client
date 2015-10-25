@@ -220,7 +220,7 @@ let PlayerImgs = {
 	despawn: createImage("imgs/player_despawn.png")
 };
 let PlayerSounds = {
-	despawn: {url: "sounds/player_despawn.wav", vol: 1.5},
+	despawn: {url: "sounds/player_despawn.wav", vol: 1},
 	thrust: {url: "sounds/player_thrust.wav", vol: 1}
 };
 
