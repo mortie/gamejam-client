@@ -424,11 +424,16 @@ export default class Game {
 
 		this.keymap = [];
 		this.keymap[87] = "up";
+		this.keymap[38] = "up";
 		this.keymap[83] = "down";
+		this.keymap[40] = "down";
 		this.keymap[65] = "left";
+		this.keymap[37] = "left";
 		this.keymap[68] = "right";
+		this.keymap[39] = "right";
 		this.keymap[32] = "shoot";
 		this.keymap[16] = "sprint";
+
 
 		this.entities = [];
 		this.animations = [];
@@ -456,7 +461,6 @@ export default class Game {
 		});
 
 		sock.on("despawn", (msg) => {
-			console.log(msg);
 			if (!this.entities[msg.id])
 				return;
 
