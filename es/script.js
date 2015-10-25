@@ -1,12 +1,20 @@
 let Game = require("./game");
 
-document.querySelector("#startGameBtn").addEventListener("click", () => {
+let game, sock;
+
+function startGame() {
 	view("game");
-	let sock = new SockSugar(conf.address);
-	let game = new Game(sock, document.getElementById("canvas"));
+
+	sock = new SockSugar(conf.address);
+	game = new Game(sock, document.getElementById("canvas"));
 
 	sock.on("close", () => {
 		alert("Server closed.");
 		game.stop();
 	});
-});
+
+	game.onloss = () => view("game-over");
+}
+
+document.querySelector("#startGameBtn").addEventListener("click", startGame);
+document.querySelector("#restartGameBtn").addEventListener("click", startGame);

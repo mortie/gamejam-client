@@ -284,11 +284,11 @@ class Player extends Entity {
 					return;
 				}
 
-				let pos = e.pos.clone().sub(this.pos).normalize().scale(100);
+				let pos = e.pos.clone().sub(this.pos).normalize().scale(130);
 
 				ctx.fillStyle = "rgb(255, 0, 0)";
 				ctx.beginPath();
-				ctx.arc(pos.x, pos.y, 10, 0, 2*Math.PI);
+				ctx.arc(pos.x, pos.y, 5, 0, 2*Math.PI);
 				ctx.closePath();
 				ctx.fill();
 			});
@@ -365,6 +365,7 @@ export default class Game {
 		this.raf = null;
 		this.prevTime = new Date().getTime();
 		this.player = null;
+		this.onloss = function(){};
 
 		this.shake = 0;
 		this.shakedec = 0.5;
@@ -387,13 +388,15 @@ export default class Game {
 		});
 
 		sock.on("set", (msg) => {
-			if (!this.entities[msg.id]) {
-				let ent = createEntity(msg, this);
-				if (ent)
-					this.entities[msg.id] = ent;
-			} else {
-				this.entities[msg.id].set(msg);
-			}
+			msg.forEach((m) => {
+				if (!this.entities[m.id]) {
+					let ent = createEntity(m, this);
+					if (ent)
+						this.entities[m.id] = ent;
+				} else {
+					this.entities[m.id].set(m);
+				}
+			});
 		});
 
 		sock.on("despawn", (msg) => {
@@ -405,8 +408,8 @@ export default class Game {
 			if (msg.id == this.id) {
 				this.screenShake(400);
 				setTimeout(() => {
-					alert("You died.");
 					this.stop();
+					this.onloss();
 				}, 1200);
 			}
 		});
