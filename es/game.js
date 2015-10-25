@@ -392,7 +392,7 @@ class Player extends Entity {
 		this.thrustAnim.loop = false;
 		this.game.playSound(PlayerSounds.despawn, this.pos);
 		if (this.thrustSound)
-			this.thrustSound.stop();
+			this.thrustSound.pause();
 	}
 }
 

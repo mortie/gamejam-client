@@ -20,10 +20,15 @@ function startGame(name) {
 	game.onloss = () => view("game-over");
 }
 
-document.querySelector("#startGameBtn").addEventListener("click", startGame);
+document.querySelector("#startForm").addEventListener("submit", (evt) => {
+	evt.preventDefault();
+	startGame();
+});
+
 document.querySelector("#restartGameBtn").addEventListener("click", () => {
 	location.reload();
 });
+
 document.querySelector("#storyBtn").addEventListener("click", () => {
 	location.hash = "";
 	location.reload();
