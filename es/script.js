@@ -17,4 +17,18 @@ function startGame() {
 }
 
 document.querySelector("#startGameBtn").addEventListener("click", startGame);
-document.querySelector("#restartGameBtn").addEventListener("click", startGame);
+document.querySelector("#restartGameBtn").addEventListener("click", () => {
+	location.hash = "game";
+	location.reload();
+});
+document.querySelector("#storyBtn").addEventListener("click", () => {
+	location.hash = "";
+	location.reload();
+});
+
+window.addEventListener("load", () => {
+	if (location.hash.substring(1) === "game") {
+		startGame();
+		console.log("starting");
+	}
+});
