@@ -12,6 +12,12 @@ function diff(n1, n2) {
 	return Math.abs(n1 - n2);
 }
 
+function createImage(url) {
+	var img = document.createElement("img");
+	img.src = url;
+	return img;
+}
+
 function background(ctx, camera, offset) {
 	if (!background.cache) {
 		let cache = [];
@@ -162,13 +168,18 @@ class Entity {
 let BulletImgs = {
 	despawn: createImage("imgs/bullet_despawn.png")
 };
+let BulletSounds = {
+	spawn: "sounds/bullet_spawn.wav",
+	despawn: "sounds/bullet_despawn.wav"
+};
 
 class Bullet extends Entity {
 	constructor(x, y, vel, id, ownerId, game) {
 		super(x, y, 5, 5, id, game);
-		this.imgs = BulletImgs;
 		this.vel.set(vel.x, vel.y);
 		this.ownerId = ownerId;
+
+		game.playSound(BulletSounds.spawn, this.pos);
 	}
 
 	draw(ctx, selfId) {
@@ -190,7 +201,7 @@ class Bullet extends Entity {
 
 	despawn() {
 		this.game.animate(new Animation({
-			img: this.imgs.despawn,
+			img: BulletImgs.despawn,
 			x: this.pos.x,
 			y: this.pos.y,
 			width: 64,
@@ -200,6 +211,7 @@ class Bullet extends Entity {
 			wsteps: 5,
 			hsteps: 5
 		}));
+		this.game.playSound(BulletSounds.despawn, this.pos);
 	}
 }
 
@@ -207,18 +219,21 @@ let PlayerImgs = {
 	thrust_back: createImage("imgs/player_thrust_back.png"),
 	despawn: createImage("imgs/player_despawn.png")
 };
+let PlayerSounds = {
+	despawn: "sounds/player_despawn.wav",
+	thrust: "sounds/player_thrust.wav"
+};
 
 class Player extends Entity {
 	constructor(x, y, id, rot, game) {
 		super(x, y, 25, 60, id, game);
-		this.imgs = PlayerImgs;
 		this.rot = rot;
 		this.rotVel = 0;
 		this.keys = {};
 		this.health = 0;
 
 		this.thrustAnim = new Animation({
-			img: this.imgs.thrust_back,
+			img: PlayerImgs.thrust_back,
 			x: this.pos.x,
 			y: this.pos.y,
 			width: 128,
@@ -232,6 +247,12 @@ class Player extends Entity {
 		});
 		this.thrustAnim.visible = false;
 		game.animate(this.thrustAnim);
+
+		this.thrustSound = document.createElement("audio");
+		this.thrustSound.src = PlayerSounds.thrust;
+		this.thrustSound.loop = true;
+		this.thrustSound.play();
+		this.thrustSound.volume = 0;
 	}
 
 	draw(ctx, selfId) {
@@ -315,15 +336,21 @@ class Player extends Entity {
 		super.update(dt);
 		this.rot += this.rotVel * dt;
 
-		if (this.keys.up)
+		if (this.keys.up) {
 			this.thrustAnim.visible = true;
-		else
+			if (this.keys.sprint)
+				this.thrustSound.volume = 1;
+			else
+				this.thrustSound.volume = 0.5;
+		} else {
 			this.thrustAnim.visible = false;
+			this.thrustSound.volume = 0;
+		}
 	}
 
 	despawn() {
 		this.game.animate(new Animation({
-			img: this.imgs.despawn,
+			img: PlayerImgs.despawn,
 			x: this.pos.x,
 			y: this.pos.y,
 			width: 64,
@@ -337,6 +364,7 @@ class Player extends Entity {
 		}));
 		this.thrustAnim.visible = false;
 		this.thrustAnim.loop = false;
+		this.game.playSound(PlayerSounds.despawn, this.pos);
 	}
 }
 
@@ -349,12 +377,6 @@ function createEntity(obj, game) {
 		console.log("Unknown entity type: "+obj.type);
 		return false;
 	}
-}
-
-function createImage(url) {
-	var img = document.createElement("img");
-	img.src = url;
-	return img;
 }
 
 export default class Game {
@@ -501,5 +523,16 @@ export default class Game {
 		animation.onend = () => {
 			delete this.animations[i];
 		};
+	}
+
+	playSound(url, pos) {
+		let player = this.entities[this.id];
+		let dist = player.pos.clone().sub(pos);
+		console.log(dist, dist.length());
+
+		let sound = document.createElement("audio");
+		sound.src = url;
+		sound.volume = Math.max(1 - (dist.length() / 1000), 0);
+		sound.play();
 	}
 }
