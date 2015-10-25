@@ -4,6 +4,7 @@ let game, sock;
 
 function startGame() {
 	view("game");
+	location.hash = "game";
 
 	sock = new SockSugar(conf.address);
 	game = new Game(sock, document.getElementById("canvas"));
