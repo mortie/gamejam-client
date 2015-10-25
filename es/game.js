@@ -235,7 +235,7 @@ class Player extends Entity {
 	}
 
 	draw(ctx, selfId) {
-		let h = 255-((100-this.health) * 2);
+		let h = Math.round((this.health * 2.4) + 15);
 
 		if (selfId == this.id) {
 			ctx.fillStyle = "rgb("+h+", "+h+", "+h+")";
@@ -254,6 +254,8 @@ class Player extends Entity {
 
 			if (this.keys.sprint) {
 				this.thrustAnim.dheight = 100;
+				if (this.id == selfId)
+					this.game.screenShake(10);
 			} else {
 				this.thrustAnim.dheight = 64;
 			}
