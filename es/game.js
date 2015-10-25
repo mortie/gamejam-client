@@ -169,8 +169,8 @@ let BulletImgs = {
 	despawn: createImage("imgs/bullet_despawn.png")
 };
 let BulletSounds = {
-	spawn: "sounds/bullet_spawn.wav",
-	despawn: "sounds/bullet_despawn.wav"
+	spawn: {url: "sounds/bullet_spawn.wav", vol: 0.5},
+	despawn: {url: "sounds/bullet_despawn.wav", vol: 1}
 };
 
 class Bullet extends Entity {
@@ -220,8 +220,8 @@ let PlayerImgs = {
 	despawn: createImage("imgs/player_despawn.png")
 };
 let PlayerSounds = {
-	despawn: "sounds/player_despawn.wav",
-	thrust: "sounds/player_thrust.wav"
+	despawn: {url: "sounds/player_despawn.wav", vol: 1.5},
+	thrust: {url: "sounds/player_thrust.wav", vol: 1}
 };
 
 class Player extends Entity {
@@ -251,7 +251,7 @@ class Player extends Entity {
 
 		if (this.id === game.id) {
 			this.thrustSound = document.createElement("audio");
-			this.thrustSound.src = PlayerSounds.thrust;
+			this.thrustSound.src = PlayerSounds.thrust.url;
 			this.thrustSound.loop = true;
 			this.thrustSound.play();
 			this.thrustSound.volume = 0;
@@ -403,7 +403,6 @@ function createEntity(obj, game) {
 		return new Bullet(obj.pos.x, obj.pos.y, obj.vel, obj.id, obj.ownerId, game);
 	} else {
 		throw new Error("Unknown entity type: "+obj.type);
-		return false;
 	}
 }
 
@@ -562,7 +561,7 @@ export default class Game {
 		};
 	}
 
-	playSound(url, pos) {
+	playSound(s, pos) {
 		let player = this.entities[this.id];
 		if (!player)
 			return;
@@ -570,8 +569,8 @@ export default class Game {
 		let dist = player.pos.clone().sub(pos);
 
 		let sound = document.createElement("audio");
-		sound.src = url;
-		sound.volume = Math.max(1 - (dist.length() / 1000), 0);
+		sound.src = s.url;
+		sound.volume = Math.max(1 - (dist.length() / 1000), 0) * s.vol;
 		sound.play();
 	}
 }
